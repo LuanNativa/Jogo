@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo de Operações com Cronômetro</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f7fc;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #333;
+    }
+
+    #game-container {
+      background-color: #ffffff;
+      padding: 30px 50px;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      width: 350px;
+      text-align: center;
+      transition: transform 0.3s ease-in-out;
+    }
+
+    #game-container:hover {
+      transform: scale(1.05);
+    }
+
+    h1 {
+      font-size: 2.2em;
+      margin-bottom: 20px;
+      color: #5f6368;
+    }
+
+    .score {
+      font-size: 1.4em;
+      color: #3c8dbc;
+      font-weight: bold;
+    }
+
+    .input-area input {
+      padding: 15px;
+      font-size: 1.2em;
+      border-radius: 8px;
+      border: 2px solid #3c8dbc;
+      margin-top: 20px;
+      width: 70%;
+      outline: none;
+      transition: border-color 0.3s ease-in-out;
+    }
+
+    .input-area input:focus {
+      border-color: #007bff;
+    }
+
+    .button {
+      padding: 12px 25px;
+      margin-top: 20px;
+      background-color: #007bff;
+      color: white;
+      font-size: 1.1em;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      width: 100%;
+    }
+
+    .button:hover {
+      background-color: #0056b3;
+    }
+
+    .button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    #timer {
+      font-size: 1.5em;
+      color: #d9534f;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+
+    #difficulty {
+      font-size: 1.2em;
+      color: #5bc0de;
+      font-weight: bold;
+    }
+
+    #feedback {
+      font-size: 1.1em;
+      margin-top: 10px;
+      color: #ff5722;
+    }
+
+    #restart-button {
+      display: none;
+      padding: 12px 25px;
+      background-color: #28a745;
+      color: white;
+      font-size: 1.1em;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 20px;
+      width: 100%;
+      transition: background-color 0.3s ease;
+    }
+
+    #restart-button:hover {
+      background-color: #218838;
+    }
+
+    #pause-button {
+      display: none;
+      padding: 12px 25px;
+      background-color: #f39c12;
+      color: white;
+      font-size: 1.1em;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 10px;
+      width: 100%;
+      transition: background-color 0.3s ease;
+    }
+
+    #pause-button:hover {
+      background-color: #e67e22;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <h1>Jogo de Operações</h1>
+    <p id="question">Clique em "Começar" para iniciar o jogo!</p>
+    <p id="difficulty">Dificuldade: -</p>
+    <p id="timer">Tempo restante: -</p>
+    <div class="input-area">
+      <input type="number" id="answer" placeholder="Sua resposta" disabled>
+      <p>Pressione <strong>ESPAÇO</strong> para enviar sua resposta.</p>
+    </div>
+    <p class="score">Pontuação: <span id="score">0</span></p>
+    <p id="feedback"></p>
+    <button id="start-button" class="button" onclick="startGame()">Começar</button>
+    <button id="restart-button" class="button" onclick="restartGame()">Recomeçar</button>
+    <button id="pause-button" class="button" onclick="pauseGame()">Pausar</button>
+  </div>
+
+  <script>
+    let score = 0;
+    let currentQuestion = {};
+    let difficulty = "Fácil";
+    let timeLeft = 30; // Tempo inicial em segundos
+    let timerInterval;
+    let isPaused = false;
+    let pausedTimeLeft = 30; // Variável para armazenar o tempo quando o jogo é pausado
+
+    function getRange() {
+      if (score <= 5) return { min: 1, max: 10, level: "Fácil" };
+      if (score <= 10) return { min: 1, max: 20, level: "Médio" };
+      return { min: 1, max: 50, level: "Difícil" };
+    }
+
+    function generateNumbers() {
+      const range = getRange();
+      const num1 = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+      const num2 = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+      const operations = ["+", "x", "/"];
+      const operation = operations[Math.floor(Math.random() * operations.length)];
+
+      let question, correctAnswer;
+
+      if (operation === "+") {
+        question = `${num1} + ${num2}`;
+        correctAnswer = num1 + num2;
+      } else if (operation === "x") {
+        question = `${num1} x ${num2}`;
+        correctAnswer = num1 * num2;
+      } else if (operation === "/") {
+        const dividend = num1 * num2; // Garante que a divisão resulte em um número inteiro
+        question = `${dividend} ÷ ${num2}`;
+        correctAnswer = dividend / num2;
+      }
+
+      currentQuestion = { question, correctAnswer };
+      difficulty = range.level;
+      document.getElementById("question").textContent = `Quanto é ${question}?`;
+      document.getElementById("difficulty").textContent = `Dificuldade: ${difficulty}`;
+      resetTimer();
+    }
+
+    function checkAnswer() {
+      const answer = parseFloat(document.getElementById("answer").value);
+      const correctAnswer = currentQuestion.correctAnswer;
+
+      if (answer === correctAnswer) {
+        score++;
+        document.getElementById("feedback").textContent = "Correto! Continue!";
+        document.getElementById("feedback").style.color = "green";
+      } else {
+        endGame(`Errado! A resposta era ${correctAnswer}.`);
+        return;
+      }
+
+      document.getElementById("score").textContent = score;
+      document.getElementById("answer").value = "";
+      generateNumbers();
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timeLeft = pausedTimeLeft; // Usa o tempo pausado ao invés de reiniciar para 30
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        if (!isPaused) {
+          timeLeft--;
+          updateTimerDisplay();
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            endGame("O tempo acabou!");
+          }
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      document.getElementById("timer").textContent = `Tempo restante: ${timeLeft}s`;
+    }
+
+    function endGame(message) {
+      clearInterval(timerInterval);
+      document.getElementById("feedback").textContent = message;
+      document.getElementById("feedback").style.color = "red";
+      document.getElementById("restart-button").style.display = "inline-block";
+      document.getElementById("start-button").style.display = "none";
+      document.getElementById("pause-button").style.display = "none";
+      document.getElementById("answer").disabled = true;
+      document.getElementById("timer").textContent = "Jogo encerrado!";
+      document.getElementById("score").style.color = "green";
+    }
+
+    function startGame() {
+      score = 0;
+      document.getElementById("score").textContent = score;
+      document.getElementById("score").style.color = "green";
+      document.getElementById("answer").disabled = false;
+      document.getElementById("answer").focus();
+      document.getElementById("start-button").style.display = "none";
+      document.getElementById("pause-button").style.display = "inline-block";
+      document.getElementById("restart-button").style.display = "none";
+      generateNumbers();
+    }
+
+    function restartGame() {
+      startGame();
+    }
+
+    function pauseGame() {
+      isPaused = !isPaused;
+      if (isPaused) {
+        pausedTimeLeft = timeLeft; // Salva o tempo restante quando o jogo é pausado
+        document.getElementById("pause-button").textContent = "Retomar";
+        document.getElementById("answer").disabled = true;
+        document.getElementById("feedback").textContent = "Jogo pausado!";
+      } else {
+        document.getElementById("pause-button").textContent = "Pausar";
+        document.getElementById("answer").disabled = false;
+        document.getElementById("feedback").textContent = "";
+        resetTimer();
+      }
+    }
+
+    // Captura o evento de pressionar a tecla "espaço"
+    document.addEventListener("keydown", (event) => {
+      if (event.code === "Space" && !document.getElementById("answer").disabled) {
+        checkAnswer();
+      }
+    });
+  </script>
+</body>
+</html>
